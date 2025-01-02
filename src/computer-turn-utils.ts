@@ -23,7 +23,7 @@ const getRandomComputerGuess = (
   return guess;
 };
 
-const getSunkenShips = (
+export const getSunkenShips = (
   ships: TShipObj,
   guesses: number[]
 ): (keyof TShipObj)[] => {

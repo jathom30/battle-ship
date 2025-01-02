@@ -40,10 +40,12 @@ export const isGuessedHit = (
   guesses: number[]
 ) => isHit(guess, ships.flat()) && guesses.includes(guess);
 
-const isFreeSpace = (x: number, y: number, ships: TShip[]) =>
-  !ships.some((ship) =>
+const isFreeSpace = (x: number, y: number, ships: TShip[]) => {
+  const isOccupied = ships.some((ship) =>
     ship.some(([shipX, shipY]) => shipX === x && shipY === y)
   );
+  return !isOccupied;
+};
 
 const getRandomShipPlacement = (length: number, otherShips: TShip[]) => {
   const isVertical = Math.random() > 0.5;
@@ -61,12 +63,18 @@ const getRandomShipPlacement = (length: number, otherShips: TShip[]) => {
   return ship;
 };
 
-export const createComputerShips = () => {
-  const ships: TShip[] = [];
-  for (const length of Object.values(SHIPS)) {
-    const ship = getRandomShipPlacement(length, ships);
-    ships.push(ship);
-  }
+export const autoplaceShips = (): TShipObj => {
+  const ships: TShipObj = {
+    carrier: [],
+    battleship: [],
+    cruiser: [],
+    submarine: [],
+    destroyer: [],
+  };
+  Object.entries(SHIPS).forEach(([ship, length]) => {
+    const newShip = getRandomShipPlacement(length, Object.values(ships));
+    ships[ship as keyof typeof SHIPS] = newShip;
+  });
   return ships;
 };
 
@@ -122,36 +130,6 @@ export const allShipsPlaced = (ships: TShipObj) =>
 
 export const isHit = (guess: number, ships: TShip) =>
   ships.some((ship) => getIndex(ship[0], ship[1]) === guess);
-
-export const quickStartPos = {
-  carrier: [
-    [2, 1],
-    [3, 1],
-    [4, 1],
-    [5, 1],
-    [6, 1],
-  ],
-  battleship: [
-    [4, 3],
-    [5, 3],
-    [6, 3],
-    [7, 3],
-  ],
-  cruiser: [
-    [6, 5],
-    [7, 5],
-    [8, 5],
-  ],
-  submarine: [
-    [1, 5],
-    [1, 6],
-    [1, 7],
-  ],
-  destroyer: [
-    [8, 7],
-    [9, 7],
-  ],
-};
 
 export const isWinner = (ships: TShip[], guesses: number[]) => {
   const allShips = Object.values(ships).flat();
