@@ -34,6 +34,12 @@ export function isConsecutive(arr: number[]) {
   return true;
 }
 
+export const isGuessedHit = (
+  guess: number,
+  ships: TShip[],
+  guesses: number[]
+) => isHit(guess, ships.flat()) && guesses.includes(guess);
+
 const isFreeSpace = (x: number, y: number, ships: TShip[]) =>
   !ships.some((ship) =>
     ship.some(([shipX, shipY]) => shipX === x && shipY === y)

@@ -11,8 +11,10 @@ export const usePlayerTurn = (onEndTurn: () => void) => {
     setTurnCount(newTurnCount);
 
     if (turnCount > 3) {
-      onEndTurn();
-      setTurnCount(0);
+      setTimeout(() => {
+        onEndTurn();
+        setTurnCount(0);
+      }, 300);
     }
   };
 

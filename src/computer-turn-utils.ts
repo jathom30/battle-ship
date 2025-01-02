@@ -1,16 +1,18 @@
 import {
   getIndex,
   getXY,
-  isConsecutive,
+  isGuessedHit,
   isHit,
   isWithinBounds,
   TShip,
+  TShipObj,
 } from "./ship-utils";
 
 export const getRandomComputerGuess = (
   userShips: TShip,
   computerGuesses: number[]
 ): number => {
+  console.log("RANDOM");
   if (computerGuesses.length === 100) {
     return -1;
   }
@@ -21,35 +23,124 @@ export const getRandomComputerGuess = (
   return guess;
 };
 
-// TODO - implement the isFoundShip function
-export const isFoundShip = (
+export const getSunkenShips = (
+  ships: TShipObj,
+  guesses: number[]
+): (keyof TShipObj)[] => {
+  return Object.keys(ships).reduce((acc: (keyof TShipObj)[], shipName) => {
+    return [
+      ...acc,
+      ...(ships[shipName as keyof TShipObj].every(([x, y]) =>
+        guesses.includes(getIndex(x, y))
+      )
+        ? [shipName as keyof TShipObj]
+        : []),
+    ];
+  }, []);
+};
+
+const getFirstInConsecutiveRowOfHits = (
   ships: TShip,
-  guesses: number[],
-  shipLength: number
+  computerGuesses: number[],
+  lastHit: number
+): number => {
+  const [x, y] = getXY(lastHit);
+  // if square to the left is hit
+  const leftIsHit = isHit(getIndex(x, y - 1), ships);
+  if (leftIsHit) {
+    return getFirstInConsecutiveRowOfHits(
+      ships,
+      computerGuesses,
+      getIndex(x, y - 1)
+    );
+  }
+  return getIndex(x, y);
+};
+const getLastInConsecutiveRowOfHits = (
+  ships: TShip,
+  computerGuesses: number[],
+  lastHit: number
+): number => {
+  const [x, y] = getXY(lastHit);
+  // if square to the right is hit
+  const rightIsHit =
+    isHit(getIndex(x, y + 1), ships) &&
+    computerGuesses.includes(getIndex(x, y + 1));
+  if (rightIsHit) {
+    return getLastInConsecutiveRowOfHits(
+      ships,
+      computerGuesses,
+      getIndex(x, y + 1)
+    );
+  }
+  return getIndex(x, y);
+};
+
+const getRowOfHits = (
+  ships: TShip,
+  computerGuesses: number[],
+  lastHit: number
 ) => {
-  // ship is likely found if there is a straight line of computer guesses of the same length
-  const hits = guesses
-    .map((guess) => getXY(guess))
-    .filter(([x, y]) => isHit(getIndex(x, y), ships));
-  const rowsOfHits = hits.reduce((acc, [x, y]) => {
-    if (acc[x]) {
-      acc[x].push(y);
-    } else {
-      acc[x] = [y];
-    }
-    return acc;
-  }, {} as Record<number, number[]>);
-  const colsOfHits = hits.reduce((acc, [x, y]) => {
-    if (acc[y]) {
-      acc[y].push(x);
-    } else {
-      acc[y] = [x];
-    }
-    return acc;
-  }, {} as Record<number, number[]>);
-  return [...Object.values(rowsOfHits), ...Object.values(colsOfHits)].some(
-    (line) => isConsecutive(line) && line.length >= shipLength
+  const left = getFirstInConsecutiveRowOfHits(ships, computerGuesses, lastHit);
+  const right = getLastInConsecutiveRowOfHits(ships, computerGuesses, lastHit);
+  return [left, right];
+};
+
+const getFirstInConsecutiveColumnOfHits = (
+  ships: TShip,
+  computerGuesses: number[],
+  lastHit: number
+): number => {
+  const [x, y] = getXY(lastHit);
+  // if square above is hit
+  const upIsHit =
+    isHit(getIndex(x - 1, y), ships) &&
+    computerGuesses.includes(getIndex(x - 1, y));
+  if (upIsHit) {
+    return getFirstInConsecutiveColumnOfHits(
+      ships,
+      computerGuesses,
+      getIndex(x - 1, y)
+    );
+  }
+  return getIndex(x, y);
+};
+const getLastInConsecutiveColumnOfHits = (
+  ships: TShip,
+  computerGuesses: number[],
+  lastHit: number
+): number => {
+  const [x, y] = getXY(lastHit);
+  // if square below is hit
+  const downIsHit =
+    isHit(getIndex(x + 1, y), ships) &&
+    computerGuesses.includes(getIndex(x + 1, y));
+  if (downIsHit) {
+    return getLastInConsecutiveColumnOfHits(
+      ships,
+      computerGuesses,
+      getIndex(x + 1, y)
+    );
+  }
+  return getIndex(x, y);
+};
+
+const getColumnOfHits = (
+  ships: TShip,
+  computerGuesses: number[],
+  lastHit: number
+) => {
+  const top = getFirstInConsecutiveColumnOfHits(
+    ships,
+    computerGuesses,
+    lastHit
   );
+  const bottom = getLastInConsecutiveColumnOfHits(
+    ships,
+    computerGuesses,
+    lastHit
+  );
+  return [top, bottom];
 };
 
 const getVerticalGuess = (
@@ -57,8 +148,9 @@ const getVerticalGuess = (
   computerGuesses: number[],
   lastGuess: number
 ) => {
-  const [x, y] = getXY(lastGuess);
-  const [up, down] = [x - 1, x + 1].map((x) => getIndex(x, y));
+  const [first, last] = getColumnOfHits(ships, computerGuesses, lastGuess);
+  const up = first - 10;
+  const down = last + 10;
   if (up >= 0 && !computerGuesses.includes(up)) {
     return up;
   }
@@ -73,8 +165,9 @@ const getHorizontalGuess = (
   computerGuesses: number[],
   lastGuess: number
 ) => {
-  const [x, y] = getXY(lastGuess);
-  const [left, right] = [y - 1, y + 1].map((y) => getIndex(x, y));
+  const [first, last] = getRowOfHits(ships, computerGuesses, lastGuess);
+  const left = first - 1;
+  const right = last + 1;
   if (left >= 0 && !computerGuesses.includes(left)) {
     return left;
   }
@@ -84,57 +177,12 @@ const getHorizontalGuess = (
   return getRandomComputerGuess(ships, computerGuesses);
 };
 
-const getLastHit = (userShips: TShip, computerGuesses: number[]) => {
-  const hits = computerGuesses.filter((i) => isHit(i, userShips));
-  if (!hits) return null;
-  return hits[hits.length - 1];
-};
-
-const getNextMoveBasedOnLastHit = (
+const getNextMoveIfPrevWasHit = (
   computerGuesses: number[],
-  lastHit: number
+  lastHit: number,
+  ships: TShip
 ) => {
   const [x, y] = getXY(lastHit);
-  const adjacentSquares = [
-    [x - 1, y],
-    [x + 1, y],
-    [x, y - 1],
-    [x, y + 1],
-  ];
-  const availableSquares = adjacentSquares
-    .filter(
-      ([x, y]) =>
-        isWithinBounds(x, y) && !computerGuesses.includes(getIndex(x, y))
-    )
-    .map(([x, y]) => getIndex(x, y));
-  return availableSquares;
-};
-
-export const getComputerGuess = (
-  userShips: TShip,
-  computerGuesses: number[]
-) => {
-  // if no guesses, get random guess
-  if (computerGuesses.length === 0) {
-    return getRandomComputerGuess(userShips, computerGuesses);
-  }
-  // if last guess was a miss, get random guess
-  const lastGuess = computerGuesses[computerGuesses.length - 1];
-  if (!isHit(lastGuess, userShips)) {
-    const lastHit = getLastHit(userShips, computerGuesses);
-    if (!lastHit) {
-      return getRandomComputerGuess(userShips, computerGuesses);
-    }
-    const nextMoveBasedOnLastHit = getNextMoveBasedOnLastHit(
-      computerGuesses,
-      lastHit
-    );
-    if (nextMoveBasedOnLastHit.length === 0) {
-      return getRandomComputerGuess(userShips, computerGuesses);
-    }
-    return nextMoveBasedOnLastHit[0];
-  }
-  const [x, y] = getXY(lastGuess);
   const adjacentSquares = [
     [x - 1, y],
     [x + 1, y],
@@ -145,7 +193,7 @@ export const getComputerGuess = (
   const adjacentHits = adjacentSquares.filter(
     ([x, y]) =>
       isWithinBounds(x, y) &&
-      isHit(getIndex(x, y), userShips) &&
+      isHit(getIndex(x, y), ships) &&
       computerGuesses.includes(getIndex(x, y))
   );
   // if there are no adjacent hits, start checking empty adjacent squares
@@ -163,10 +211,101 @@ export const getComputerGuess = (
   const isHorizontal = horizontalHits.length > 0;
   const isVertical = verticalHits.length > 0;
   if (isHorizontal) {
-    return getHorizontalGuess(userShips, computerGuesses, lastGuess);
+    return getHorizontalGuess(ships, computerGuesses, lastHit);
   }
   if (isVertical) {
-    return getVerticalGuess(userShips, computerGuesses, lastGuess);
+    return getVerticalGuess(ships, computerGuesses, lastHit);
   }
-  return getRandomComputerGuess(userShips, computerGuesses);
+  // if we can't determine if the next guess should be horizontal or vertical
+  // return a guess based on the available squares
+  const available = adjacentSquares.find(
+    (square) => !computerGuesses.includes(getIndex(square[0], square[1]))
+  );
+  if (!available) {
+    return getRandomComputerGuess(ships, computerGuesses);
+  }
+  return getIndex(available[0], available[1]);
+};
+
+const getLastHit = (userShips: TShip, computerGuesses: number[]) => {
+  const hits = computerGuesses.filter((i) => isHit(i, userShips));
+  if (!hits) return null;
+  return hits[hits.length - 1];
+};
+
+const getNextMoveBasedOnLastHit = (
+  ships: TShipObj,
+  computerGuesses: number[],
+  lastHit: number
+) => {
+  // check if last hit was apart of a sunken ship, if it was, return a random guess
+  const sunkenShips = getSunkenShips(ships, computerGuesses);
+  const sunkenShipSquares = sunkenShips
+    .map((ship) => ships[ship])
+    .flat()
+    .map(([x, y]) => getIndex(x, y));
+  if (sunkenShipSquares.includes(lastHit)) {
+    return getRandomComputerGuess(Object.values(ships).flat(), computerGuesses);
+  }
+  // if last hit was not part of a sunken ship, determine if the ship is vertical or horizontal
+  const isHorizontal =
+    isGuessedHit(lastHit - 1, Object.values(ships), computerGuesses) ||
+    isGuessedHit(lastHit + 1, Object.values(ships), computerGuesses);
+  const isVertical =
+    isGuessedHit(lastHit - 10, Object.values(ships), computerGuesses) ||
+    isGuessedHit(lastHit + 10, Object.values(ships), computerGuesses);
+  if (isHorizontal) {
+    return getHorizontalGuess(
+      Object.values(ships).flat(),
+      computerGuesses,
+      lastHit
+    );
+  }
+  if (isVertical) {
+    const guess = getVerticalGuess(
+      Object.values(ships).flat(),
+      computerGuesses,
+      lastHit
+    );
+    return guess;
+  }
+  // if we can't determine if the ship is vertical or horizontal, it's a single square ship
+  // we should return an open square from above, below, left, or right
+  const [x, y] = getXY(lastHit);
+  const adjacentSquares = [
+    [x - 1, y],
+    [x + 1, y],
+    [x, y - 1],
+    [x, y + 1],
+  ];
+  const available = adjacentSquares.find(
+    (square) => !computerGuesses.includes(getIndex(square[0], square[1]))
+  );
+  if (!available) {
+    return getRandomComputerGuess(Object.values(ships).flat(), computerGuesses);
+  }
+  return getIndex(available[0], available[1]);
+};
+
+export const getComputerGuess = (
+  userShips: TShipObj,
+  computerGuesses: number[]
+) => {
+  const ships = Object.values(userShips).flat();
+
+  // if no guesses, get random guess
+  if (computerGuesses.length === 0) {
+    return getRandomComputerGuess(ships, computerGuesses);
+  }
+  const lastGuess = computerGuesses[computerGuesses.length - 1];
+  if (isHit(lastGuess, ships)) {
+    // if last guess was a hit, get next move based on last hit
+    return getNextMoveIfPrevWasHit(computerGuesses, lastGuess, ships);
+  }
+  // if last guess was a miss, get most recent hit and determine next move
+  const lastHit = getLastHit(ships, computerGuesses);
+  if (!lastHit) {
+    return getRandomComputerGuess(ships, computerGuesses);
+  }
+  return getNextMoveBasedOnLastHit(userShips, computerGuesses, lastHit);
 };

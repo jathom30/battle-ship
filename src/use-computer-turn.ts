@@ -10,30 +10,33 @@ export const useComputerTurn = (
   const [computerGuesses, setComputerGuesses] = useState<number[]>([]);
   const [turnCount, setTurnCount] = useState(0);
 
-  // useEffect(() => {
-  //   if (!isComputerTurn) {
-  //     setTurnCount(0);
-  //     return;
-  //   }
-  //   const interval = setInterval(() => {
-  //     setComputerGuesses((prev) => [
-  //       ...prev,
-  //       getComputerGuess(Object.values(userShips).flat(), prev),
-  //     ]);
-  //     setTurnCount((prev) => prev + 1);
-  //   }, 1000);
-  //   if (turnCount > 24) {
-  //     clearInterval(interval);
-  //     onEndTurn();
-  //   }
-  //   return () => clearInterval(interval);
-  // }, [isComputerTurn, onEndTurn, turnCount, userShips]);
+  useEffect(() => {
+    if (!isComputerTurn) {
+      setTurnCount(0);
+      return;
+    }
+    let timeout: NodeJS.Timeout;
+    const interval = setInterval(() => {
+      setComputerGuesses((prev) => [
+        ...prev,
+        getComputerGuess(userShips, prev),
+      ]);
+      setTurnCount((prev) => prev + 1);
+    }, 1000);
+    if (turnCount > 4) {
+      timeout = setTimeout(() => {
+        clearInterval(interval);
+        onEndTurn();
+      }, 1000);
+    }
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isComputerTurn, onEndTurn, turnCount, userShips]);
 
   const onNextTurn = () => {
-    setComputerGuesses((prev) => [
-      ...prev,
-      getComputerGuess(Object.values(userShips).flat(), prev),
-    ]);
+    setComputerGuesses((prev) => [...prev, getComputerGuess(userShips, prev)]);
     setTurnCount((prev) => prev + 1);
   };
 
