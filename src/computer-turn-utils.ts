@@ -8,7 +8,7 @@ import {
   TShipObj,
 } from "./ship-utils";
 
-export const getRandomComputerGuess = (
+const getRandomComputerGuess = (
   userShips: TShip,
   computerGuesses: number[]
 ): number => {
@@ -23,7 +23,7 @@ export const getRandomComputerGuess = (
   return guess;
 };
 
-export const getSunkenShips = (
+const getSunkenShips = (
   ships: TShipObj,
   guesses: number[]
 ): (keyof TShipObj)[] => {
@@ -298,12 +298,13 @@ export const getComputerGuess = (
     return getRandomComputerGuess(ships, computerGuesses);
   }
   const lastGuess = computerGuesses[computerGuesses.length - 1];
+  // if last guess was a hit, get next move based on last hit
   if (isHit(lastGuess, ships)) {
-    // if last guess was a hit, get next move based on last hit
     return getNextMoveIfPrevWasHit(computerGuesses, lastGuess, ships);
   }
   // if last guess was a miss, get most recent hit and determine next move
   const lastHit = getLastHit(ships, computerGuesses);
+  // if no hits have been made, get random guess
   if (!lastHit) {
     return getRandomComputerGuess(ships, computerGuesses);
   }

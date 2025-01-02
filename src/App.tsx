@@ -91,9 +91,9 @@ function App() {
       <Board>
         {Array.from({ length: 100 }, (_, i) => i).map((i) => (
           <Square onClick={() => handleSquareClick(i)} key={i}>
-            <span className="absolute left-0 top-0 text-xs text-slate-300">
+            {/* <span className="absolute left-0 top-0 text-xs text-slate-300">
               {i}
-            </span>
+            </span> */}
             {gameState === "setup" &&
             Object.values(userShips).some((ship) =>
               ship.some(([x, y]) => getIndex(x, y) === i)

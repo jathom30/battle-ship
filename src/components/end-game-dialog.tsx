@@ -1,7 +1,6 @@
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -28,7 +27,6 @@ export const EndGameDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={onClick}>Restart</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

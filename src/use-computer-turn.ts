@@ -22,12 +22,12 @@ export const useComputerTurn = (
         getComputerGuess(userShips, prev),
       ]);
       setTurnCount((prev) => prev + 1);
-    }, 1000);
+    }, 300);
     if (turnCount > 4) {
       timeout = setTimeout(() => {
         clearInterval(interval);
         onEndTurn();
-      }, 1000);
+      }, 300);
     }
     return () => {
       clearInterval(interval);
